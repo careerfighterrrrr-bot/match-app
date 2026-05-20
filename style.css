@@ -1,0 +1,349 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.screen {
+    display: none;
+    width: 100%;
+    height: 100vh;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.screen.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ログイン画面 */
+#loginScreen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.login-container {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+
+.logo {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.login-container h1 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 28px;
+}
+
+.login-container p {
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 16px;
+}
+
+#loginForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#loginForm input {
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+#loginForm input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* スワイプ画面 */
+#swipeScreen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    flex-direction: column;
+    padding: 20px;
+}
+
+.swipe-header {
+    margin-bottom: 20px;
+    color: white;
+    text-align: center;
+}
+
+.swipe-header h2 {
+    font-size: 24px;
+}
+
+.swipe-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+}
+
+.card-stack {
+    position: relative;
+    width: 300px;
+    height: 400px;
+}
+
+.card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    cursor: grab;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    touch-action: none;
+}
+
+.card.active {
+    z-index: 10;
+}
+
+.card img {
+    width: 100%;
+    height: 65%;
+    object-fit: cover;
+}
+
+.card-info {
+    padding: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.card-age {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.card-bio {
+    font-size: 14px;
+    color: #888;
+    line-height: 1.4;
+}
+
+/* スワイプボタン */
+.swipe-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.1);
+    width: 100%;
+}
+
+.btn-nope,
+.btn-like {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.btn-nope {
+    background: #ff6b6b;
+}
+
+.btn-like {
+    background: #ff4757;
+}
+
+.btn-nope:hover,
+.btn-like:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.btn-nope:active,
+.btn-like:active {
+    transform: scale(0.95);
+}
+
+.btn-primary {
+    padding: 14px 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.match-counter {
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* マッチ画面 */
+#matchScreen {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.match-celebration {
+    text-align: center;
+    color: white;
+    position: relative;
+}
+
+.match-celebration h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+    animation: bounce 0.6s ease-in-out;
+}
+
+.match-celebration p {
+    font-size: 20px;
+    margin-bottom: 30px;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.confetti {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+/* トースト通知 */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #ff4757 0%, #ff6b6b 100%);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 50px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    animation: slideIn 0.4s ease-out, slideOut 0.4s ease-in 2.6s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.toast::before {
+    content: "💕";
+    font-size: 20px;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+@media (max-width: 600px) {
+    .login-container {
+        width: 95%;
+        padding: 30px 20px;
+    }
+
+    .card {
+        width: 280px;
+        height: 380px;
+    }
+
+    .card-stack {
+        width: 280px;
+        height: 380px;
+    }
+
+    .swipe-buttons {
+        gap: 15px;
+    }
+
+    .btn-nope,
+    .btn-like {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+
+    .match-celebration h1 {
+        font-size: 36px;
+    }
+}

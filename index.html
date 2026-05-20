@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match App - 恋愛マッチング</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ログイン画面 -->
+    <div id="loginScreen" class="screen active">
+        <div class="login-container">
+            <div class="logo">💕 MATCH</div>
+            <h1>恋愛マッチングアプリ</h1>
+            <p>素敵な出会いを見つけよう</p>
+            
+            <form id="loginForm">
+                <input type="text" id="nameInput" placeholder="あなたの名前" required>
+                <input type="text" id="ageInput" placeholder="年齢" type="number" min="18" max="99" required>
+                <button type="submit" class="btn-primary">はじめる</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- スワイプ画面 -->
+    <div id="swipeScreen" class="screen">
+        <div class="swipe-header">
+            <h2>素敵な人を見つけよう</h2>
+        </div>
+
+        <div class="swipe-container">
+            <div id="cardStack" class="card-stack">
+                <!-- カードがJavaScriptで動的に追加される -->
+            </div>
+        </div>
+
+        <div class="swipe-buttons">
+            <button class="btn-nope" onclick="swipeLeft()">💔 No</button>
+            <button class="btn-like" onclick="swipeRight()">❤️ Like</button>
+        </div>
+
+        <div class="match-counter">
+            <p id="matchCount">マッチ: 0件</p>
+        </div>
+    </div>
+
+    <!-- マッチ完了画面 -->
+    <div id="matchScreen" class="screen">
+        <div class="match-celebration">
+            <div class="confetti"></div>
+            <h1>✨ マッチしました！✨</h1>
+            <p id="matchMessage"></p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-primary" onclick="goToMessaging()">💬 メッセージする</button>
+                <button class="btn-primary" onclick="backToSwipe()">もっと探す</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メッセージ画面 -->
+    <div id="messagingScreen" class="screen">
+        <div class="messaging-container">
+            <div class="messaging-header">
+                <button class="btn-back" onclick="backToMatch()">← 戻る</button>
+                <h2>マッチした人たち</h2>
+                <div></div>
+            </div>
+
+            <div class="matches-list" id="matchesList">
+                <!-- マッチした人のリストが表示される -->
+            </div>
+        </div>
+    </div>
+
+    <!-- チャット画面 -->
+    <div id="chatScreen" class="screen">
+        <div class="chat-container">
+            <div class="chat-header">
+                <button class="btn-back" onclick="backToMatches()">← マッチ一覧</button>
+                <div class="chat-profile">
+                    <img id="chatProfileImage" src="" alt="" class="chat-avatar">
+                    <div>
+                        <h3 id="chatPartnerName"></h3>
+                        <p id="chatPartnerAge"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages-area" id="messagesArea">
+                <!-- メッセージがここに表示される -->
+            </div>
+
+            <div class="message-input-area">
+                <input type="text" id="messageInput" placeholder="メッセージを入力..." maxlength="500">
+                <button class="btn-send" onclick="sendMessage()">送信</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="profiles.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
