@@ -1,73 +1,153 @@
+// Firebase 初期化
+const firebaseConfig = {
+    apiKey: "AIzaSyBMSmokIU5uuFTq0_e7Kd9lBK8Ve1qwvc4",
+    authDomain: "match-app-share.firebaseapp.com",
+    projectId: "match-app-share",
+    storageBucket: "match-app-share.firebasestorage.app",
+    messagingSenderId: "392628264983",
+    appId: "1:392628264983:web:144d9a799c43e961bafc52"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// アプリの状態
 let matchCount = 0;
 let currentUserName = '';
 let currentProfile = null;
 let matches = [];
 let currentChatPartner = null;
+let currentUid = null;
 
-const USERS_KEY = 'matchapp_users';
-const SESSION_KEY = 'matchapp_session';
-
-function getUsers() {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-}
-
-function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function getCurrentSession() {
-    return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-}
-
-function setCurrentSession(user) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-}
-
-function userDataKey(userId) {
-    return `matchapp_data_${userId}`;
-}
-
+// Firestoreに保存
 function saveState() {
-    const session = getCurrentSession();
-    if (!session) return;
-    localStorage.setItem(userDataKey(session.id), JSON.stringify({ currentUserName, matchCount, matches }));
+    if (!currentUid) return;
+    db.collection('userData').doc(currentUid).set({ matchCount, matches });
 }
 
-function loadState() {
-    const session = getCurrentSession();
-    if (!session) return false;
-    const saved = localStorage.getItem(userDataKey(session.id));
-    if (!saved) {
-        currentUserName = session.name;
+// Firestoreからユーザーデータを読み込んでアプリ開始
+async function loadUserData(uid) {
+    currentUid = uid;
+    const [userDoc, dataDoc] = await Promise.all([
+        db.collection('users').doc(uid).get(),
+        db.collection('userData').doc(uid).get()
+    ]);
+
+    const user = userDoc.exists ? userDoc.data() : {};
+    currentUserName = user.name || '';
+
+    if (dataDoc.exists) {
+        const d = dataDoc.data();
+        matchCount = d.matchCount || 0;
+        matches = d.matches || [];
+    } else {
         matchCount = 0;
         matches = [];
-        return true;
     }
-    const data = JSON.parse(saved);
-    currentUserName = data.currentUserName || session.name;
-    matchCount = data.matchCount || 0;
-    matches = data.matches || [];
-    return true;
-}
 
-function startApp() {
-    loadState();
-    const session = getCurrentSession();
+    const initial = currentUserName.charAt(0) || '?';
+    document.getElementById('drawerName').textContent = currentUserName;
+    document.getElementById('drawerAge').textContent = user.age ? `${user.age}歳` : '';
+    document.getElementById('drawerIdentifier').textContent = maskIdentifier(user.email || '');
+    applyProfilePhoto(user.photo || null, initial);
+
     document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
     if (matches.length > 0) {
         const badge = document.getElementById('historyBadge');
         badge.textContent = matches.length;
         badge.style.display = 'inline-flex';
     }
-    const initial = currentUserName.charAt(0) || '?';
-    document.getElementById('drawerName').textContent = currentUserName;
-    document.getElementById('drawerAge').textContent = session ? `${session.age}歳` : '';
-    document.getElementById('drawerIdentifier').textContent = maskIdentifier(session ? session.identifier : '');
-    applyProfilePhoto(session ? session.photo : null, initial);
 
-    document.getElementById('authScreen').classList.remove('active');
+    document.getElementById('loadingScreen').classList.remove('active');
     document.getElementById('swipeScreen').classList.add('active');
     loadCard();
+}
+
+// 認証状態の監視（ページ読み込み時に自動ログイン）
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        await loadUserData(user.uid);
+    } else {
+        document.getElementById('loadingScreen').classList.remove('active');
+        document.getElementById('authScreen').classList.add('active');
+    }
+});
+
+// 認証タブ切り替え
+function showAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'register') || (i === 1 && tab === 'login'));
+    });
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'flex' : 'none';
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'flex' : 'none';
+    document.getElementById('registerError').textContent = '';
+    document.getElementById('loginError').textContent = '';
+}
+
+// 登録処理
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('regIdentifier').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+    const name = document.getElementById('regName').value.trim();
+    const age = document.getElementById('regAge').value;
+    const errorEl = document.getElementById('registerError');
+    const btn = this.querySelector('button[type="submit"]');
+
+    if (password !== passwordConfirm) {
+        errorEl.textContent = 'パスワードが一致しません';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '登録中...';
+    try {
+        const cred = await auth.createUserWithEmailAndPassword(email, password);
+        await db.collection('users').doc(cred.user.uid).set({ name, age, email, photo: null });
+    } catch (err) {
+        errorEl.textContent = firebaseErrorMessage(err.code);
+        btn.disabled = false;
+        btn.textContent = '登録する';
+    }
+});
+
+// ログイン処理
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginIdentifier').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    const btn = this.querySelector('button[type="submit"]');
+
+    btn.disabled = true;
+    btn.textContent = 'ログイン中...';
+    try {
+        await auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+        errorEl.textContent = firebaseErrorMessage(err.code);
+        btn.disabled = false;
+        btn.textContent = 'ログイン';
+    }
+});
+
+function firebaseErrorMessage(code) {
+    const map = {
+        'auth/email-already-in-use': 'このメールアドレスはすでに登録されています',
+        'auth/invalid-email': 'メールアドレスの形式が正しくありません',
+        'auth/weak-password': 'パスワードは6文字以上にしてください',
+        'auth/user-not-found': 'メールアドレスまたはパスワードが違います',
+        'auth/wrong-password': 'メールアドレスまたはパスワードが違います',
+        'auth/invalid-credential': 'メールアドレスまたはパスワードが違います',
+        'auth/too-many-requests': 'しばらく待ってから再試行してください',
+    };
+    return map[code] || `エラーが発生しました (${code})`;
+}
+
+function maskIdentifier(id) {
+    if (!id) return '';
+    const [local, domain] = id.split('@');
+    return local.slice(0, 2) + '***@' + domain;
 }
 
 function applyProfilePhoto(photo, initial) {
@@ -99,30 +179,26 @@ function handlePhotoChange(event) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = function(e) {
-        const photo = e.target.result;
-        const session = getCurrentSession();
-        if (!session) return;
-        const users = getUsers();
-        const user = users.find(u => u.id === session.id);
-        if (user) {
-            user.photo = photo;
-            saveUsers(users);
-        }
-        session.photo = photo;
-        setCurrentSession(session);
-        applyProfilePhoto(photo, currentUserName.charAt(0));
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxSize = 200;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+            else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const photo = canvas.toDataURL('image/jpeg', 0.7);
+            if (currentUid) {
+                db.collection('users').doc(currentUid).update({ photo });
+            }
+            applyProfilePhoto(photo, currentUserName.charAt(0));
+        };
+        img.src = e.target.result;
     };
     reader.readAsDataURL(file);
     event.target.value = '';
-}
-
-function maskIdentifier(id) {
-    if (!id) return '';
-    if (id.includes('@')) {
-        const [local, domain] = id.split('@');
-        return local.slice(0, 2) + '***@' + domain;
-    }
-    return id.slice(0, 3) + '****';
 }
 
 function openProfile() {
@@ -136,76 +212,19 @@ function closeProfile() {
 }
 
 function logout() {
-    localStorage.removeItem(SESSION_KEY);
+    auth.signOut();
     closeProfile();
     matchCount = 0;
     currentUserName = '';
     matches = [];
     currentChatPartner = null;
+    currentUid = null;
     document.getElementById('matchCount').textContent = 'マッチ: 0件';
     document.getElementById('historyBadge').style.display = 'none';
-    document.getElementById('swipeScreen').classList.remove('active');
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('authScreen').classList.add('active');
-    showAuthTab('register');
+    showAuthTab('login');
 }
-
-// 認証タブ切り替え
-function showAuthTab(tab) {
-    document.querySelectorAll('.auth-tab').forEach((t, i) => {
-        t.classList.toggle('active', (i === 0 && tab === 'register') || (i === 1 && tab === 'login'));
-    });
-    document.getElementById('registerForm').style.display = tab === 'register' ? 'flex' : 'none';
-    document.getElementById('loginForm').style.display = tab === 'login' ? 'flex' : 'none';
-    document.getElementById('registerError').textContent = '';
-    document.getElementById('loginError').textContent = '';
-}
-
-// 登録処理
-document.getElementById('registerForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const identifier = document.getElementById('regIdentifier').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
-    const name = document.getElementById('regName').value.trim();
-    const age = document.getElementById('regAge').value;
-    const errorEl = document.getElementById('registerError');
-
-    if (password !== passwordConfirm) {
-        errorEl.textContent = 'パスワードが一致しません';
-        return;
-    }
-
-    const users = getUsers();
-    if (users.find(u => u.identifier === identifier)) {
-        errorEl.textContent = 'このアドレス/電話番号はすでに登録されています';
-        return;
-    }
-
-    const user = { id: Date.now(), identifier, password, name, age };
-    users.push(user);
-    saveUsers(users);
-    setCurrentSession(user);
-    startApp();
-});
-
-// ログイン処理
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const identifier = document.getElementById('loginIdentifier').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorEl = document.getElementById('loginError');
-
-    const users = getUsers();
-    const user = users.find(u => u.identifier === identifier && u.password === password);
-
-    if (!user) {
-        errorEl.textContent = 'メールアドレス/電話番号またはパスワードが違います';
-        return;
-    }
-
-    setCurrentSession(user);
-    startApp();
-});
 
 const autoReplies = [
     "こんにちは！マッチしてくれてありがとう😊",
@@ -222,14 +241,12 @@ const autoReplies = [
     "わかります〜！同じ気持ちです😄"
 ];
 
-// カードを読み込む
 function loadCard() {
     const profile = generateRandomProfile();
     currentProfile = profile;
 
     const cardStack = document.getElementById('cardStack');
-    const existingCards = cardStack.querySelectorAll('.card');
-    existingCards.forEach(card => card.remove());
+    cardStack.querySelectorAll('.card').forEach(card => card.remove());
 
     const card = document.createElement('div');
     card.className = 'card active';
@@ -263,7 +280,6 @@ function loadCard() {
     makeCardDraggable(card);
 }
 
-// 画像ナビゲーションのセットアップ
 function setupImageNav(card, images) {
     let index = 0;
     const img = card.querySelector('.card-main-image');
@@ -291,13 +307,9 @@ function setupImageNav(card, images) {
     nextBtn.addEventListener('click', e => { e.stopPropagation(); showImage(index + 1); });
 }
 
-// カードをドラッグ可能にする
 function makeCardDraggable(card) {
-    let startX = 0;
-    let startY = 0;
-    let currentX = 0;
-    let isDragging = false;
-    let hasMoved = false;
+    let startX = 0, startY = 0, currentX = 0;
+    let isDragging = false, hasMoved = false;
 
     const overlay = card.querySelector('.card-intro-overlay');
     const closeBtn = card.querySelector('.intro-close');
@@ -324,21 +336,13 @@ function makeCardDraggable(card) {
 
     function moveDrag(e) {
         if (!isDragging) return;
-
         currentX = (e.type.includes('mouse') ? e.clientX : e.touches[0].clientX) - startX;
         const currentY = (e.type.includes('mouse') ? e.clientY : e.touches[0].clientY) - startY;
-
-        if (Math.abs(currentX) > 8 || Math.abs(currentY) > 8) {
-            hasMoved = true;
-        }
-
+        if (Math.abs(currentX) > 8 || Math.abs(currentY) > 8) hasMoved = true;
         if (!hasMoved) return;
-
         const rotate = (currentX / window.innerWidth) * 20;
         card.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
-
-        const opacity = 1 - Math.abs(currentX) / window.innerWidth;
-        card.style.opacity = opacity;
+        card.style.opacity = 1 - Math.abs(currentX) / window.innerWidth;
     }
 
     document.addEventListener('mouseup', endDrag);
@@ -348,28 +352,21 @@ function makeCardDraggable(card) {
         if (!isDragging) return;
         isDragging = false;
         card.style.cursor = 'grab';
-
         if (!hasMoved) {
             overlay.classList.add('active');
             return;
         }
-
         const threshold = window.innerWidth * 0.25;
-
-        if (currentX > threshold) {
-            likeProfile();
-        } else if (currentX < -threshold) {
-            noProfile();
-        } else {
+        if (currentX > threshold) likeProfile();
+        else if (currentX < -threshold) noProfile();
+        else {
             card.style.transform = 'translateX(0) rotate(0deg)';
             card.style.opacity = 1;
         }
     }
 }
 
-function swipeRight() {
-    likeProfile();
-}
+function swipeRight() { likeProfile(); }
 
 function likeProfile() {
     const matchChance = Math.random() < 0.6;
@@ -414,9 +411,7 @@ function likeProfile() {
     }
 }
 
-function swipeLeft() {
-    noProfile();
-}
+function swipeLeft() { noProfile(); }
 
 function noProfile() {
     const card = document.querySelector('.card.active');
@@ -467,7 +462,6 @@ function openMatchesScreen() {
 
 function renderMatchesList() {
     const list = document.getElementById('matchesList');
-
     if (matches.length === 0) {
         list.innerHTML = `
             <div class="matches-empty">
@@ -478,7 +472,6 @@ function renderMatchesList() {
         `;
         return;
     }
-
     const reversed = [...matches].reverse();
     list.innerHTML = reversed.map(partner => {
         const last = partner.messages[partner.messages.length - 1];
@@ -522,7 +515,7 @@ function openChat(partner) {
 
     if (partner.messages.length === 0) {
         setTimeout(() => {
-            addPartnerMessage(partner, `はじめまして！マッチしてくれてありがとう😊`);
+            addPartnerMessage(partner, 'はじめまして！マッチしてくれてありがとう😊');
         }, 800);
     }
 }
@@ -569,38 +562,22 @@ function escapeHtml(t) {
 }
 
 function createConfetti() {
-    const confettiContainer = document.querySelector('.confetti');
-    confettiContainer.innerHTML = '';
-
+    const container = document.querySelector('.confetti');
+    container.innerHTML = '';
     for (let i = 0; i < 30; i++) {
-        const confetto = document.createElement('div');
-        confetto.style.position = 'absolute';
-        confetto.style.width = Math.random() * 10 + 5 + 'px';
-        confetto.style.height = confetto.style.width;
-        confetto.style.background = ['#ff4757', '#ff6b6b', '#ffa502', '#ffb700'][Math.floor(Math.random() * 4)];
-        confetto.style.left = Math.random() * 100 + '%';
-        confetto.style.top = '-10px';
-        confetto.style.borderRadius = '50%';
-        confetto.style.animation = `fall ${2 + Math.random() * 1}s linear`;
-        confetto.style.pointerEvents = 'none';
-
-        document.body.appendChild(confetto);
-        setTimeout(() => confetto.remove(), 3000);
+        const el = document.createElement('div');
+        el.style.cssText = `
+            position:absolute; border-radius:50%; pointer-events:none;
+            width:${Math.random()*10+5}px; height:${Math.random()*10+5}px;
+            background:${['#ff4757','#ff6b6b','#ffa502','#ffb700'][Math.floor(Math.random()*4)]};
+            left:${Math.random()*100}%; top:-10px;
+            animation:fall ${2+Math.random()}s linear;
+        `;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
     }
 }
 
 const style = document.createElement('style');
-style.textContent = `
-    @keyframes fall {
-        to {
-            transform: translateY(100vh) rotate(360deg);
-            opacity: 0;
-        }
-    }
-`;
+style.textContent = `@keyframes fall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }`;
 document.head.appendChild(style);
-
-// 起動時の自動ログイン
-if (getCurrentSession()) {
-    startApp();
-}

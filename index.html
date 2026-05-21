@@ -7,8 +7,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- 読み込み中画面 -->
+    <div id="loadingScreen" class="screen active">
+        <div class="loading-content">
+            <div class="logo">💕 MATCH</div>
+            <p style="color:white;margin-top:16px;">読み込み中...</p>
+        </div>
+    </div>
+
     <!-- 認証画面 -->
-    <div id="authScreen" class="screen active">
+    <div id="authScreen" class="screen">
         <div class="auth-container">
             <div class="logo">💕 MATCH</div>
 
@@ -18,7 +26,7 @@
             </div>
 
             <form id="registerForm" class="auth-form">
-                <input type="text" id="regIdentifier" placeholder="メールアドレスまたは電話番号" required>
+                <input type="text" id="regIdentifier" placeholder="メールアドレス" required>
                 <input type="password" id="regPassword" placeholder="パスワード（6文字以上）" minlength="6" required>
                 <input type="password" id="regPasswordConfirm" placeholder="パスワード確認" required>
                 <input type="text" id="regName" placeholder="あなたの名前" required>
@@ -28,7 +36,7 @@
             </form>
 
             <form id="loginForm" class="auth-form" style="display:none">
-                <input type="text" id="loginIdentifier" placeholder="メールアドレスまたは電話番号" required>
+                <input type="text" id="loginIdentifier" placeholder="メールアドレス" required>
                 <input type="password" id="loginPassword" placeholder="パスワード" required>
                 <div class="auth-error" id="loginError"></div>
                 <button type="submit" class="btn-primary">ログイン</button>
@@ -139,6 +147,9 @@
         </div>
     </div>
 
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="profiles.js"></script>
     <script src="script.js"></script>
 </body>
