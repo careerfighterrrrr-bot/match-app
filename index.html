@@ -25,7 +25,11 @@
     <!-- スワイプ画面 -->
     <div id="swipeScreen" class="screen">
         <div class="swipe-header">
+            <div class="swipe-header-spacer"></div>
             <h2>素敵な人を見つけよう</h2>
+            <button class="btn-history" onclick="openMatchesScreen()" id="historyBtn">
+                💬<span class="history-badge" id="historyBadge" style="display:none">0</span>
+            </button>
         </div>
 
         <div class="swipe-container">
@@ -49,10 +53,11 @@
         <div class="match-celebration">
             <div class="confetti"></div>
             <h1>✨ マッチしました！✨</h1>
+            <img id="matchedPersonImg" src="" alt="" class="match-person-img">
             <p id="matchMessage"></p>
-            <div style="display: flex; gap: 15px;">
-                <button class="btn-primary" onclick="goToMessaging()">💬 メッセージする</button>
-                <button class="btn-primary" onclick="backToSwipe()">もっと探す</button>
+            <div class="match-buttons">
+                <button class="btn-primary btn-message-jump" onclick="goToMessaging()">💬 メッセージ画面に飛びますか？</button>
+                <button class="btn-skip" onclick="backToSwipe()">もっと探す</button>
             </div>
         </div>
     </div>
@@ -92,7 +97,7 @@
 
             <div class="message-input-area">
                 <input type="text" id="messageInput" placeholder="メッセージを入力..." maxlength="500">
-                <button class="btn-send" onclick="sendMessage()">送信</button>
+                <button class="btn-send" onclick="sendMessage()">&#10148;</button>
             </div>
         </div>
     </div>
