@@ -4,21 +4,208 @@ let currentProfile = null;
 let matches = [];
 let currentChatPartner = null;
 
-const STORAGE_KEY = 'matchapp_data';
+const USERS_KEY = 'matchapp_users';
+const SESSION_KEY = 'matchapp_session';
+
+function getUsers() {
+    return JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+}
+
+function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+function getCurrentSession() {
+    return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+}
+
+function setCurrentSession(user) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function userDataKey(userId) {
+    return `matchapp_data_${userId}`;
+}
 
 function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentUserName, matchCount, matches }));
+    const session = getCurrentSession();
+    if (!session) return;
+    localStorage.setItem(userDataKey(session.id), JSON.stringify({ currentUserName, matchCount, matches }));
 }
 
 function loadState() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return false;
+    const session = getCurrentSession();
+    if (!session) return false;
+    const saved = localStorage.getItem(userDataKey(session.id));
+    if (!saved) {
+        currentUserName = session.name;
+        matchCount = 0;
+        matches = [];
+        return true;
+    }
     const data = JSON.parse(saved);
-    currentUserName = data.currentUserName || '';
+    currentUserName = data.currentUserName || session.name;
     matchCount = data.matchCount || 0;
     matches = data.matches || [];
     return true;
 }
+
+function startApp() {
+    loadState();
+    const session = getCurrentSession();
+    document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
+    if (matches.length > 0) {
+        const badge = document.getElementById('historyBadge');
+        badge.textContent = matches.length;
+        badge.style.display = 'inline-flex';
+    }
+    const initial = currentUserName.charAt(0) || '?';
+    document.getElementById('drawerName').textContent = currentUserName;
+    document.getElementById('drawerAge').textContent = session ? `${session.age}歳` : '';
+    document.getElementById('drawerIdentifier').textContent = maskIdentifier(session ? session.identifier : '');
+    applyProfilePhoto(session ? session.photo : null, initial);
+
+    document.getElementById('authScreen').classList.remove('active');
+    document.getElementById('swipeScreen').classList.add('active');
+    loadCard();
+}
+
+function applyProfilePhoto(photo, initial) {
+    const btn = document.getElementById('profileBtn');
+    const avatar = document.getElementById('drawerAvatar');
+    if (photo) {
+        btn.style.backgroundImage = `url(${photo})`;
+        btn.style.backgroundSize = 'cover';
+        btn.style.backgroundPosition = 'center';
+        btn.textContent = '';
+        avatar.style.backgroundImage = `url(${photo})`;
+        avatar.style.backgroundSize = 'cover';
+        avatar.style.backgroundPosition = 'center';
+        avatar.textContent = '';
+    } else {
+        btn.style.backgroundImage = '';
+        btn.textContent = initial || '?';
+        avatar.style.backgroundImage = '';
+        avatar.textContent = initial || '?';
+    }
+}
+
+function triggerPhotoUpload() {
+    document.getElementById('photoInput').click();
+}
+
+function handlePhotoChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const photo = e.target.result;
+        const session = getCurrentSession();
+        if (!session) return;
+        const users = getUsers();
+        const user = users.find(u => u.id === session.id);
+        if (user) {
+            user.photo = photo;
+            saveUsers(users);
+        }
+        session.photo = photo;
+        setCurrentSession(session);
+        applyProfilePhoto(photo, currentUserName.charAt(0));
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+}
+
+function maskIdentifier(id) {
+    if (!id) return '';
+    if (id.includes('@')) {
+        const [local, domain] = id.split('@');
+        return local.slice(0, 2) + '***@' + domain;
+    }
+    return id.slice(0, 3) + '****';
+}
+
+function openProfile() {
+    document.getElementById('profileDrawer').classList.add('open');
+    document.getElementById('profileOverlay').classList.add('open');
+}
+
+function closeProfile() {
+    document.getElementById('profileDrawer').classList.remove('open');
+    document.getElementById('profileOverlay').classList.remove('open');
+}
+
+function logout() {
+    localStorage.removeItem(SESSION_KEY);
+    closeProfile();
+    matchCount = 0;
+    currentUserName = '';
+    matches = [];
+    currentChatPartner = null;
+    document.getElementById('matchCount').textContent = 'マッチ: 0件';
+    document.getElementById('historyBadge').style.display = 'none';
+    document.getElementById('swipeScreen').classList.remove('active');
+    document.getElementById('authScreen').classList.add('active');
+    showAuthTab('register');
+}
+
+// 認証タブ切り替え
+function showAuthTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'register') || (i === 1 && tab === 'login'));
+    });
+    document.getElementById('registerForm').style.display = tab === 'register' ? 'flex' : 'none';
+    document.getElementById('loginForm').style.display = tab === 'login' ? 'flex' : 'none';
+    document.getElementById('registerError').textContent = '';
+    document.getElementById('loginError').textContent = '';
+}
+
+// 登録処理
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const identifier = document.getElementById('regIdentifier').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+    const name = document.getElementById('regName').value.trim();
+    const age = document.getElementById('regAge').value;
+    const errorEl = document.getElementById('registerError');
+
+    if (password !== passwordConfirm) {
+        errorEl.textContent = 'パスワードが一致しません';
+        return;
+    }
+
+    const users = getUsers();
+    if (users.find(u => u.identifier === identifier)) {
+        errorEl.textContent = 'このアドレス/電話番号はすでに登録されています';
+        return;
+    }
+
+    const user = { id: Date.now(), identifier, password, name, age };
+    users.push(user);
+    saveUsers(users);
+    setCurrentSession(user);
+    startApp();
+});
+
+// ログイン処理
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const identifier = document.getElementById('loginIdentifier').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+
+    const users = getUsers();
+    const user = users.find(u => u.identifier === identifier && u.password === password);
+
+    if (!user) {
+        errorEl.textContent = 'メールアドレス/電話番号またはパスワードが違います';
+        return;
+    }
+
+    setCurrentSession(user);
+    startApp();
+});
 
 const autoReplies = [
     "こんにちは！マッチしてくれてありがとう😊",
@@ -35,31 +222,15 @@ const autoReplies = [
     "わかります〜！同じ気持ちです😄"
 ];
 
-// ログイン処理
-document.getElementById('loginForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    currentUserName = document.getElementById('nameInput').value;
-    const age = document.getElementById('ageInput').value;
-    saveState();
-
-    document.getElementById('loginScreen').classList.remove('active');
-    document.getElementById('swipeScreen').classList.add('active');
-    loadCard();
-});
-
 // カードを読み込む
 function loadCard() {
     const profile = generateRandomProfile();
     currentProfile = profile;
-    
+
     const cardStack = document.getElementById('cardStack');
-    
-    // 既存のカードを削除
     const existingCards = cardStack.querySelectorAll('.card');
     existingCards.forEach(card => card.remove());
-    
-    // 新しいカードを作成
+
     const card = document.createElement('div');
     card.className = 'card active';
     const introHTML = profile.introduction.map(line => `<p>${line}</p>`).join('');
@@ -100,7 +271,6 @@ function setupImageNav(card, images) {
     const prevBtn = card.querySelector('.img-nav-prev');
     const nextBtn = card.querySelector('.img-nav-next');
 
-    // ドラッグ開始がナビボタンから発火しないよう伝播を止める
     [prevBtn, nextBtn].forEach(btn => {
         btn.addEventListener('mousedown', e => e.stopPropagation());
         btn.addEventListener('touchstart', e => e.stopPropagation(), { passive: true });
@@ -164,11 +334,9 @@ function makeCardDraggable(card) {
 
         if (!hasMoved) return;
 
-        // カードを回転させながら移動
         const rotate = (currentX / window.innerWidth) * 20;
         card.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
 
-        // 透明度を変更
         const opacity = 1 - Math.abs(currentX) / window.innerWidth;
         card.style.opacity = opacity;
     }
@@ -182,7 +350,6 @@ function makeCardDraggable(card) {
         card.style.cursor = 'grab';
 
         if (!hasMoved) {
-            // タップ（ドラッグなし）→ 自己紹介オーバーレイを表示
             overlay.classList.add('active');
             return;
         }
@@ -200,7 +367,6 @@ function makeCardDraggable(card) {
     }
 }
 
-// Likeボタン
 function swipeRight() {
     likeProfile();
 }
@@ -248,7 +414,6 @@ function likeProfile() {
     }
 }
 
-// Noボタン
 function swipeLeft() {
     noProfile();
 }
@@ -263,57 +428,43 @@ function noProfile() {
     setTimeout(() => loadCard(), 350);
 }
 
-// トースト通知を表示
 function showToast(message) {
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    
-    // 3秒後に削除
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
+    setTimeout(() => toast.remove(), 3000);
 }
 
-
-
-// 画面切り替え
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
 }
 
-// マッチ画面 → チャット画面へ
 function goToMessaging() {
     const partner = matches[matches.length - 1];
     if (partner) openChat(partner);
 }
 
-// マッチ画面 or チャット画面 → スワイプ画面へ戻る
 function backToSwipe() {
     showScreen('swipeScreen');
     loadCard();
 }
 
-// チャット画面 → マッチ一覧へ戻る
 function backToMatches() {
     renderMatchesList();
     showScreen('messagingScreen');
 }
 
-// マッチ一覧 → スワイプ画面へ戻る
 function backToMatch() {
     showScreen('swipeScreen');
 }
 
-// スワイプ画面 → マッチ一覧を開く
 function openMatchesScreen() {
     renderMatchesList();
     showScreen('messagingScreen');
 }
 
-// マッチ一覧を描画
 function renderMatchesList() {
     const list = document.getElementById('matchesList');
 
@@ -356,7 +507,6 @@ function openChatFromList(partnerId) {
     if (partner) openChat(partner);
 }
 
-// チャット画面を開く
 function openChat(partner) {
     currentChatPartner = partner;
     document.getElementById('chatProfileImage').src = partner.image;
@@ -377,7 +527,6 @@ function openChat(partner) {
     }
 }
 
-// メッセージ送信
 function sendMessage() {
     const input = document.getElementById('messageInput');
     const text = input.value.trim();
@@ -395,7 +544,6 @@ function sendMessage() {
     }, 900 + Math.random() * 1200);
 }
 
-// 相手のメッセージを追加
 function addPartnerMessage(partner, text) {
     const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
     partner.messages.push({ type: 'partner', text, time });
@@ -405,7 +553,6 @@ function addPartnerMessage(partner, text) {
     }
 }
 
-// メッセージ一覧を描画
 function renderMessages() {
     const area = document.getElementById('messagesArea');
     area.innerHTML = currentChatPartner.messages.map(msg => `
@@ -421,11 +568,10 @@ function escapeHtml(t) {
     return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// コンフェッティ効果
 function createConfetti() {
     const confettiContainer = document.querySelector('.confetti');
     confettiContainer.innerHTML = '';
-    
+
     for (let i = 0; i < 30; i++) {
         const confetto = document.createElement('div');
         confetto.style.position = 'absolute';
@@ -437,27 +583,12 @@ function createConfetti() {
         confetto.style.borderRadius = '50%';
         confetto.style.animation = `fall ${2 + Math.random() * 1}s linear`;
         confetto.style.pointerEvents = 'none';
-        
+
         document.body.appendChild(confetto);
-        
         setTimeout(() => confetto.remove(), 3000);
     }
 }
 
-// 起動時にデータを復元
-if (loadState()) {
-    document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
-    if (matches.length > 0) {
-        const badge = document.getElementById('historyBadge');
-        badge.textContent = matches.length;
-        badge.style.display = 'inline-flex';
-    }
-    document.getElementById('loginScreen').classList.remove('active');
-    document.getElementById('swipeScreen').classList.add('active');
-    loadCard();
-}
-
-// フォールアニメーション
 const style = document.createElement('style');
 style.textContent = `
     @keyframes fall {
@@ -468,3 +599,8 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// 起動時の自動ログイン
+if (getCurrentSession()) {
+    startApp();
+}

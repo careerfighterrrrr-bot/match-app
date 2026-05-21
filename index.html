@@ -7,17 +7,31 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ログイン画面 -->
-    <div id="loginScreen" class="screen active">
-        <div class="login-container">
+    <!-- 認証画面 -->
+    <div id="authScreen" class="screen active">
+        <div class="auth-container">
             <div class="logo">💕 MATCH</div>
-            <h1>恋愛マッチングアプリ</h1>
-            <p>素敵な出会いを見つけよう</p>
-            
-            <form id="loginForm">
-                <input type="text" id="nameInput" placeholder="あなたの名前" required>
-                <input type="text" id="ageInput" placeholder="年齢" type="number" min="18" max="99" required>
-                <button type="submit" class="btn-primary">はじめる</button>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="showAuthTab('register')">新規登録</button>
+                <button class="auth-tab" onclick="showAuthTab('login')">ログイン</button>
+            </div>
+
+            <form id="registerForm" class="auth-form">
+                <input type="text" id="regIdentifier" placeholder="メールアドレスまたは電話番号" required>
+                <input type="password" id="regPassword" placeholder="パスワード（6文字以上）" minlength="6" required>
+                <input type="password" id="regPasswordConfirm" placeholder="パスワード確認" required>
+                <input type="text" id="regName" placeholder="あなたの名前" required>
+                <input type="number" id="regAge" placeholder="年齢" min="18" max="99" required>
+                <div class="auth-error" id="registerError"></div>
+                <button type="submit" class="btn-primary">登録する</button>
+            </form>
+
+            <form id="loginForm" class="auth-form" style="display:none">
+                <input type="text" id="loginIdentifier" placeholder="メールアドレスまたは電話番号" required>
+                <input type="password" id="loginPassword" placeholder="パスワード" required>
+                <div class="auth-error" id="loginError"></div>
+                <button type="submit" class="btn-primary">ログイン</button>
             </form>
         </div>
     </div>
@@ -25,7 +39,7 @@
     <!-- スワイプ画面 -->
     <div id="swipeScreen" class="screen">
         <div class="swipe-header">
-            <div class="swipe-header-spacer"></div>
+            <button class="btn-profile" onclick="openProfile()" id="profileBtn">?</button>
             <h2>素敵な人を見つけよう</h2>
             <button class="btn-history" onclick="openMatchesScreen()" id="historyBtn">
                 💬<span class="history-badge" id="historyBadge" style="display:none">0</span>
@@ -99,6 +113,29 @@
                 <input type="text" id="messageInput" placeholder="メッセージを入力..." maxlength="500">
                 <button class="btn-send" onclick="sendMessage()">&#10148;</button>
             </div>
+        </div>
+    </div>
+
+    <!-- プロフィールドロワー -->
+    <div class="profile-overlay" id="profileOverlay" onclick="closeProfile()"></div>
+    <div class="profile-drawer" id="profileDrawer">
+        <div class="profile-drawer-header">
+            <div class="profile-drawer-avatar-wrap">
+                <div class="profile-drawer-avatar" id="drawerAvatar">?</div>
+                <button class="avatar-edit-btn" onclick="triggerPhotoUpload()">📷</button>
+            </div>
+            <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhotoChange(event)">
+            <div class="profile-drawer-name" id="drawerName"></div>
+            <div class="profile-drawer-age" id="drawerAge"></div>
+        </div>
+        <div class="profile-drawer-body">
+            <div class="profile-drawer-row">
+                <span class="profile-drawer-label">アカウント</span>
+                <span class="profile-drawer-value" id="drawerIdentifier"></span>
+            </div>
+        </div>
+        <div class="profile-drawer-footer">
+            <button class="btn-logout" onclick="logout()">ログアウト</button>
         </div>
     </div>
 
