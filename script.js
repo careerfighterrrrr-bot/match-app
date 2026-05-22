@@ -18,11 +18,39 @@ let currentProfile = null;
 let matches = [];
 let currentChatPartner = null;
 let currentUid = null;
+let realProfiles = [];
+let swipedUsers = [];
 
 // Firestoreに保存
 function saveState() {
     if (!currentUid) return;
-    db.collection('userData').doc(currentUid).set({ matchCount, matches });
+    db.collection('userData').doc(currentUid).set({ matchCount, matches, swipedUsers });
+}
+
+// 他のユーザーを取得してrealProfilesに格納
+async function loadRealProfiles() {
+    const snapshot = await db.collection('users').get();
+    const all = snapshot.docs
+        .filter(doc => doc.id !== currentUid)
+        .map(doc => ({ uid: doc.id, ...doc.data() }));
+
+    // シャッフルしてスワイプ済みを除外
+    const unswiped = all.filter(u => !swipedUsers.includes(u.uid));
+    realProfiles = unswiped.sort(() => Math.random() - 0.5);
+}
+
+function userToProfile(user) {
+    return {
+        uid: user.uid,
+        isReal: true,
+        name: user.name || '名無し',
+        age: user.age || '?',
+        bio: user.bio || '',
+        introduction: user.bio ? user.bio.split('\n').filter(Boolean) : ['よろしくお願いします！'],
+        images: user.photos && user.photos.length > 0
+            ? user.photos
+            : [`https://i.pravatar.cc/400?u=${user.uid}`]
+    };
 }
 
 // Firestoreからユーザーデータを読み込んでアプリ開始
@@ -40,10 +68,13 @@ async function loadUserData(uid) {
         const d = dataDoc.data();
         matchCount = d.matchCount || 0;
         matches = d.matches || [];
+        swipedUsers = d.swipedUsers || [];
     } else {
         matchCount = 0;
         matches = [];
+        swipedUsers = [];
     }
+    await loadRealProfiles();
 
     const initial = currentUserName.charAt(0) || '?';
     document.getElementById('drawerName').textContent = currentUserName;
@@ -330,7 +361,9 @@ const autoReplies = [
 ];
 
 function loadCard() {
-    const profile = generateRandomProfile();
+    const profile = realProfiles.length > 0
+        ? userToProfile(realProfiles.shift())
+        : generateRandomProfile();
     currentProfile = profile;
 
     const cardStack = document.getElementById('cardStack');
@@ -467,12 +500,17 @@ function likeProfile() {
         card.style.opacity = '0';
     }
 
+    if (currentProfile.isReal) {
+        swipedUsers.push(currentProfile.uid);
+    }
+
     if (matchChance) {
         matchCount++;
         document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
 
         const partner = {
             id: Date.now(),
+            uid: currentProfile.uid || null,
             name: currentProfile.name,
             age: currentProfile.age,
             bio: currentProfile.bio,
@@ -502,6 +540,10 @@ function likeProfile() {
 function swipeLeft() { noProfile(); }
 
 function noProfile() {
+    if (currentProfile && currentProfile.isReal) {
+        swipedUsers.push(currentProfile.uid);
+        saveState();
+    }
     const card = document.querySelector('.card.active');
     if (card) {
         card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
