@@ -146,6 +146,20 @@
                 <span class="profile-drawer-label">アカウント</span>
                 <span class="profile-drawer-value" id="drawerIdentifier"></span>
             </div>
+            <div class="profile-drawer-row">
+                <div class="profile-drawer-row-header">
+                    <span class="profile-drawer-label">自己紹介</span>
+                    <button class="bio-edit-btn" id="bioEditBtn" onclick="toggleBioEdit()">編集</button>
+                </div>
+                <div id="bioDisplay" class="bio-display">未設定</div>
+                <div id="bioEditArea" style="display:none">
+                    <textarea id="bioInput" class="bio-textarea" placeholder="自己紹介を書いてみよう..." maxlength="200"></textarea>
+                    <div class="bio-actions">
+                        <button class="bio-cancel-btn" onclick="cancelBioEdit()">キャンセル</button>
+                        <button class="bio-save-btn" onclick="saveBio()">保存</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="profile-drawer-footer">
             <button class="btn-logout" onclick="logout()">ログアウト</button>

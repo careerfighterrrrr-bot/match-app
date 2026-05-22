@@ -49,6 +49,8 @@ async function loadUserData(uid) {
     document.getElementById('drawerName').textContent = currentUserName;
     document.getElementById('drawerAge').textContent = user.age ? `${user.age}歳` : '';
     document.getElementById('drawerIdentifier').textContent = maskIdentifier(user.email || '');
+    document.getElementById('bioDisplay').textContent = user.bio || '未設定';
+    document.getElementById('bioInput').value = user.bio || '';
     applyProfilePhoto(user.photo || null, initial);
 
     document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
@@ -168,6 +170,28 @@ function applyProfilePhoto(photo, initial) {
         avatar.style.backgroundImage = '';
         avatar.textContent = initial || '?';
     }
+}
+
+function toggleBioEdit() {
+    document.getElementById('bioDisplay').style.display = 'none';
+    document.getElementById('bioEditArea').style.display = 'block';
+    document.getElementById('bioEditBtn').style.display = 'none';
+    document.getElementById('bioInput').focus();
+}
+
+function cancelBioEdit() {
+    document.getElementById('bioDisplay').style.display = 'block';
+    document.getElementById('bioEditArea').style.display = 'none';
+    document.getElementById('bioEditBtn').style.display = 'inline-block';
+}
+
+async function saveBio() {
+    const bio = document.getElementById('bioInput').value.trim();
+    if (currentUid) {
+        await db.collection('users').doc(currentUid).update({ bio });
+    }
+    document.getElementById('bioDisplay').textContent = bio || '未設定';
+    cancelBioEdit();
 }
 
 function triggerPhotoUpload() {
