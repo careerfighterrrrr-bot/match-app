@@ -262,6 +262,67 @@ body {
     color: #333;
 }
 
+.profile-photos-grid {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.profile-photo-item {
+    position: relative;
+    width: 72px;
+    height: 90px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.profile-photo-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top center;
+}
+
+.profile-photo-delete {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 20px;
+    height: 20px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.profile-photo-add {
+    width: 72px;
+    height: 90px;
+    border-radius: 8px;
+    border: 2px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #bbb;
+    font-size: 24px;
+    transition: border-color 0.2s, color 0.2s;
+    flex-shrink: 0;
+}
+
+.profile-photo-add:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
 .profile-drawer-row-header {
     display: flex;
     justify-content: space-between;

@@ -52,6 +52,7 @@ async function loadUserData(uid) {
     document.getElementById('bioDisplay').textContent = user.bio || '未設定';
     document.getElementById('bioInput').value = user.bio || '';
     applyProfilePhoto(user.photo || null, initial);
+    renderProfilePhotos(user.photos || []);
 
     document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
     if (matches.length > 0) {
@@ -170,6 +171,69 @@ function applyProfilePhoto(photo, initial) {
         avatar.style.backgroundImage = '';
         avatar.textContent = initial || '?';
     }
+}
+
+function renderProfilePhotos(photos) {
+    const grid = document.getElementById('profilePhotosGrid');
+    document.getElementById('photoCount').textContent = `${photos.length} / 3`;
+    grid.innerHTML = '';
+
+    photos.forEach((photo, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'profile-photo-item';
+        wrap.innerHTML = `
+            <img src="${photo}" class="profile-photo-thumb">
+            <button class="profile-photo-delete" onclick="deleteProfilePhoto(${i})">✕</button>
+        `;
+        grid.appendChild(wrap);
+    });
+
+    if (photos.length < 3) {
+        const addBtn = document.createElement('div');
+        addBtn.className = 'profile-photo-add';
+        addBtn.innerHTML = '<span>＋</span>';
+        addBtn.onclick = () => document.getElementById('profilePhotoInput').click();
+        grid.appendChild(addBtn);
+    }
+}
+
+function handleProfilePhotoAdd(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const img = new Image();
+        img.onload = async function() {
+            const canvas = document.createElement('canvas');
+            const maxW = 400, maxH = 500;
+            let w = img.width, h = img.height;
+            const ratio = Math.min(maxW / w, maxH / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const photo = canvas.toDataURL('image/jpeg', 0.75);
+
+            const userDoc = await db.collection('users').doc(currentUid).get();
+            const photos = userDoc.data().photos || [];
+            if (photos.length >= 3) return;
+            photos.push(photo);
+            await db.collection('users').doc(currentUid).update({ photos });
+            renderProfilePhotos(photos);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+}
+
+async function deleteProfilePhoto(index) {
+    const userDoc = await db.collection('users').doc(currentUid).get();
+    const photos = userDoc.data().photos || [];
+    photos.splice(index, 1);
+    await db.collection('users').doc(currentUid).update({ photos });
+    renderProfilePhotos(photos);
 }
 
 function toggleBioEdit() {

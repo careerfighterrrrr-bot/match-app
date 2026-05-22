@@ -148,6 +148,14 @@
             </div>
             <div class="profile-drawer-row">
                 <div class="profile-drawer-row-header">
+                    <span class="profile-drawer-label">写真（最大3枚）</span>
+                    <span class="profile-drawer-label" id="photoCount">0 / 3</span>
+                </div>
+                <div class="profile-photos-grid" id="profilePhotosGrid"></div>
+                <input type="file" id="profilePhotoInput" accept="image/*" style="display:none" onchange="handleProfilePhotoAdd(event)">
+            </div>
+            <div class="profile-drawer-row">
+                <div class="profile-drawer-row-header">
                     <span class="profile-drawer-label">自己紹介</span>
                     <button class="bio-edit-btn" id="bioEditBtn" onclick="toggleBioEdit()">編集</button>
                 </div>
