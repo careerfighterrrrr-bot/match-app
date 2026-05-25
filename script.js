@@ -562,8 +562,7 @@ function makeCardDraggable(card) {
 
 function swipeRight() { likeProfile(); }
 
-function likeProfile() {
-    const matchChance = Math.random() < 0.6;
+async function likeProfile() {
     const name = currentProfile ? currentProfile.name : '?';
 
     const card = document.querySelector('.card.active');
@@ -573,47 +572,71 @@ function likeProfile() {
         card.style.opacity = '0';
     }
 
-    if (currentProfile.isReal) {
-        swipedUsers.push(currentProfile.uid);
-        // いいねをFirestoreに記録（重複防止のため senderUid_receiverUid をIDに使用）
-        db.collection('likes').doc(`${currentUid}_${currentProfile.uid}`).set({
-            senderUid: currentUid,
-            receiverUid: currentProfile.uid,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+    if (!currentProfile.isReal) {
+        // ランダムプロフィールは相互いいね判定なし・60%でマッチ
+        if (Math.random() < 0.6) {
+            showMatch({
+                id: Date.now(),
+                uid: null,
+                name: currentProfile.name,
+                age: currentProfile.age,
+                bio: currentProfile.bio,
+                image: currentProfile.images[0],
+                messages: []
+            });
+        } else {
+            showToast(`${name}さんには興味を持たれませんでした...`);
+            setTimeout(() => loadCard(), 400);
+        }
+        return;
     }
 
-    if (matchChance) {
-        matchCount++;
-        document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
+    swipedUsers.push(currentProfile.uid);
+    await db.collection('likes').doc(`${currentUid}_${currentProfile.uid}`).set({
+        senderUid: currentUid,
+        receiverUid: currentProfile.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-        const partner = {
+    // 相手もいいねしていればマッチ成立
+    const theirLike = await db.collection('likes').doc(`${currentProfile.uid}_${currentUid}`).get();
+    if (theirLike.exists) {
+        showMatch({
             id: Date.now(),
-            uid: currentProfile.uid || null,
+            uid: currentProfile.uid,
             name: currentProfile.name,
             age: currentProfile.age,
             bio: currentProfile.bio,
             image: currentProfile.images[0],
             messages: []
-        };
-        matches.push(partner);
-        saveState();
-
-        const badge = document.getElementById('historyBadge');
-        badge.textContent = matches.length;
-        badge.style.display = 'inline-flex';
-
-        document.getElementById('matchedPersonImg').src = partner.image;
-        document.getElementById('matchMessage').textContent = `${partner.name}さんがあなたにLikeしました！`;
-
-        setTimeout(() => {
-            showScreen('matchScreen');
-            createConfetti();
-        }, 350);
+        });
     } else {
-        showToast(`${name}さんには興味を持たれませんでした...`);
+        showToast(`${name}さんにいいね！しました❤️`);
         setTimeout(() => loadCard(), 400);
     }
+}
+
+function showMatch(partner) {
+    if (matches.find(m => m.uid && m.uid === partner.uid)) {
+        setTimeout(() => loadCard(), 400);
+        return;
+    }
+    matchCount++;
+    document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
+    matches.push(partner);
+    saveState();
+
+    const badge = document.getElementById('historyBadge');
+    badge.textContent = matches.length;
+    badge.style.display = 'inline-flex';
+
+    document.getElementById('matchedPersonImg').src = partner.image;
+    document.getElementById('matchMessage').textContent = `${partner.name}さんとマッチしました！`;
+
+    setTimeout(() => {
+        showScreen('matchScreen');
+        createConfetti();
+    }, 350);
 }
 
 function swipeLeft() { noProfile(); }
@@ -758,20 +781,34 @@ function backToLikes() {
     showScreen('likesScreen');
 }
 
-function likeFromProfile() {
+async function likeFromProfile() {
     if (!currentViewedUser) return;
-    db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
+    await db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
         senderUid: currentUid,
         receiverUid: currentViewedUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    showToast(`${currentViewedUser.name || '名無し'}さんにいいね！しました❤️`);
-    backToLikes();
+    // いいね！された一覧から開いているので相手はすでにいいね済み → 常にマッチ成立
+    const partner = {
+        id: Date.now(),
+        uid: currentViewedUser.uid,
+        name: currentViewedUser.name || '名無し',
+        age: currentViewedUser.age || '?',
+        bio: currentViewedUser.bio || '',
+        image: profileViewImages[0],
+        messages: []
+    };
+    showMatch(partner);
 }
 
-function messageFromProfile() {
+async function messageFromProfile() {
     if (!currentViewedUser) return;
-
+    await db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
+        senderUid: currentUid,
+        receiverUid: currentViewedUser.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    // 相手はすでにいいね済み → マッチ成立してそのままチャットへ
     let partner = matches.find(m => m.uid === currentViewedUser.uid);
     if (!partner) {
         partner = {
@@ -791,7 +828,6 @@ function messageFromProfile() {
         badge.style.display = 'inline-flex';
         saveState();
     }
-
     openChat(partner);
 }
 
