@@ -781,33 +781,51 @@ function backToLikes() {
     showScreen('likesScreen');
 }
 
-async function likeFromProfile() {
+function likeFromProfile() {
     if (!currentViewedUser) return;
-    await db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
+
+    db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
         senderUid: currentUid,
         receiverUid: currentViewedUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    // いいね！された一覧から開いているので相手はすでにいいね済み → 常にマッチ成立
-    const partner = {
-        id: Date.now(),
-        uid: currentViewedUser.uid,
-        name: currentViewedUser.name || '名無し',
-        age: currentViewedUser.age || '?',
-        bio: currentViewedUser.bio || '',
-        image: profileViewImages[0],
-        messages: []
-    };
-    showMatch(partner);
+
+    // いいね！一覧から開いているので相手はすでにいいね済み → 常にマッチ成立
+    let partner = matches.find(m => m.uid === currentViewedUser.uid);
+    if (!partner) {
+        partner = {
+            id: Date.now(),
+            uid: currentViewedUser.uid,
+            name: currentViewedUser.name || '名無し',
+            age: currentViewedUser.age || '?',
+            bio: currentViewedUser.bio || '',
+            image: profileViewImages[0],
+            messages: []
+        };
+        matchCount++;
+        document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
+        matches.push(partner);
+        saveState();
+        const badge = document.getElementById('historyBadge');
+        badge.textContent = matches.length;
+        badge.style.display = 'inline-flex';
+    }
+
+    document.getElementById('matchedPersonImg').src = partner.image;
+    document.getElementById('matchMessage').textContent = `${partner.name}さんとマッチしました！`;
+    showScreen('matchScreen');
+    createConfetti();
 }
 
-async function messageFromProfile() {
+function messageFromProfile() {
     if (!currentViewedUser) return;
-    await db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
+
+    db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
         senderUid: currentUid,
         receiverUid: currentViewedUser.uid,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+
     // 相手はすでにいいね済み → マッチ成立してそのままチャットへ
     let partner = matches.find(m => m.uid === currentViewedUser.uid);
     if (!partner) {
