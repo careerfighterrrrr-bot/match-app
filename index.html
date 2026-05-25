@@ -54,9 +54,14 @@
         <div class="swipe-header">
             <button class="btn-profile" onclick="openProfile()" id="profileBtn">?</button>
             <h2>素敵な人を見つけよう</h2>
-            <button class="btn-history" onclick="openMatchesScreen()" id="historyBtn">
-                💬<span class="history-badge" id="historyBadge" style="display:none">0</span>
-            </button>
+            <div class="header-right-btns">
+                <button class="btn-header-icon" onclick="openLikesScreen()">
+                    ❤️<span class="history-badge" id="likesBadge" style="display:none">0</span>
+                </button>
+                <button class="btn-history" onclick="openMatchesScreen()" id="historyBtn">
+                    💬<span class="history-badge" id="historyBadge" style="display:none">0</span>
+                </button>
+            </div>
         </div>
 
         <div class="swipe-container">
@@ -86,6 +91,18 @@
                 <button class="btn-primary btn-message-jump" onclick="goToMessaging()">💬 メッセージ画面に飛びますか？</button>
                 <button class="btn-skip" onclick="backToSwipe()">もっと探す</button>
             </div>
+        </div>
+    </div>
+
+    <!-- いいね！画面 -->
+    <div id="likesScreen" class="screen">
+        <div class="messaging-container">
+            <div class="messaging-header">
+                <button class="btn-back" onclick="backToSwipeFromLikes()">← 戻る</button>
+                <h2>❤️ いいね！された</h2>
+                <div></div>
+            </div>
+            <div class="matches-list" id="likesList"></div>
         </div>
     </div>
 

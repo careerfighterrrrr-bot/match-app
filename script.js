@@ -95,6 +95,7 @@ async function loadUserData(uid) {
     document.getElementById('loadingScreen').classList.remove('active');
     document.getElementById('swipeScreen').classList.add('active');
     loadCard();
+    updateLikesBadge();
 }
 
 // 認証状態の監視（ページ読み込み時に自動ログイン）
@@ -502,6 +503,12 @@ function likeProfile() {
 
     if (currentProfile.isReal) {
         swipedUsers.push(currentProfile.uid);
+        // いいねをFirestoreに記録（重複防止のため senderUid_receiverUid をIDに使用）
+        db.collection('likes').doc(`${currentUid}_${currentProfile.uid}`).set({
+            senderUid: currentUid,
+            receiverUid: currentProfile.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
     }
 
     if (matchChance) {
@@ -583,6 +590,66 @@ function backToMatches() {
 
 function backToMatch() {
     showScreen('swipeScreen');
+}
+
+async function openLikesScreen() {
+    showScreen('likesScreen');
+    const list = document.getElementById('likesList');
+    list.innerHTML = '<div class="matches-empty"><p>読み込み中...</p></div>';
+
+    const snapshot = await db.collection('likes')
+        .where('receiverUid', '==', currentUid)
+        .get();
+
+    if (snapshot.empty) {
+        list.innerHTML = `
+            <div class="matches-empty">
+                <div class="matches-empty-icon">❤️</div>
+                <p>まだいいね！されていません</p>
+                <p>もっとスワイプしてみよう！</p>
+            </div>`;
+        return;
+    }
+
+    // 送信者のプロフィールを取得
+    const senderUids = snapshot.docs.map(d => d.data().senderUid);
+    const profilePromises = senderUids.map(uid => db.collection('users').doc(uid).get());
+    const profileDocs = await Promise.all(profilePromises);
+
+    list.innerHTML = profileDocs.map(doc => {
+        if (!doc.exists) return '';
+        const u = doc.data();
+        const photo = u.photos && u.photos[0] ? u.photos[0] : `https://i.pravatar.cc/80?u=${doc.id}`;
+        return `
+            <div class="match-item">
+                <img src="${photo}" class="match-item-avatar" onerror="this.src='https://i.pravatar.cc/80?img=1'">
+                <div class="match-item-info">
+                    <div class="match-item-header">
+                        <span class="match-item-name">${u.name || '名無し'}（${u.age || '?'}歳）</span>
+                    </div>
+                    <p class="match-item-preview">${u.bio || 'よろしくお願いします！'}</p>
+                </div>
+            </div>`;
+    }).join('');
+
+    // バッジを更新
+    document.getElementById('likesBadge').style.display = 'none';
+}
+
+function backToSwipeFromLikes() {
+    showScreen('swipeScreen');
+}
+
+async function updateLikesBadge() {
+    const snapshot = await db.collection('likes')
+        .where('receiverUid', '==', currentUid)
+        .get();
+    const count = snapshot.size;
+    const badge = document.getElementById('likesBadge');
+    if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-flex';
+    }
 }
 
 function openMatchesScreen() {
