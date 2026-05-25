@@ -769,6 +769,32 @@ function likeFromProfile() {
     backToLikes();
 }
 
+function messageFromProfile() {
+    if (!currentViewedUser) return;
+
+    let partner = matches.find(m => m.uid === currentViewedUser.uid);
+    if (!partner) {
+        partner = {
+            id: Date.now(),
+            uid: currentViewedUser.uid,
+            name: currentViewedUser.name || '名無し',
+            age: currentViewedUser.age || '?',
+            bio: currentViewedUser.bio || '',
+            image: profileViewImages[0],
+            messages: []
+        };
+        matches.push(partner);
+        matchCount++;
+        document.getElementById('matchCount').textContent = `マッチ: ${matchCount}件`;
+        const badge = document.getElementById('historyBadge');
+        badge.textContent = matches.length;
+        badge.style.display = 'inline-flex';
+        saveState();
+    }
+
+    openChat(partner);
+}
+
 function backToSwipeFromLikes() {
     showScreen('swipeScreen');
 }
