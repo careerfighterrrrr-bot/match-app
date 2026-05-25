@@ -106,6 +106,29 @@
         </div>
     </div>
 
+    <!-- いいね！ユーザープロフィール詳細画面 -->
+    <div id="userProfileScreen" class="screen">
+        <div class="user-profile-container">
+            <div class="user-profile-image-section">
+                <button class="btn-back user-profile-back" onclick="backToLikes()">← 戻る</button>
+                <img id="profileViewImage" src="" alt="" class="user-profile-main-img" onerror="this.src='https://i.pravatar.cc/400?img=1'">
+                <button class="img-nav img-nav-prev" id="profileViewPrev" style="display:none">&#8249;</button>
+                <button class="img-nav img-nav-next" id="profileViewNext" style="display:none">&#8250;</button>
+                <div class="img-dots" id="profileViewDots"></div>
+            </div>
+            <div class="user-profile-info-section">
+                <div class="user-profile-name-row">
+                    <span class="user-profile-name" id="profileViewName"></span>
+                    <span class="user-profile-age" id="profileViewAge"></span>
+                </div>
+                <p class="user-profile-bio" id="profileViewBio"></p>
+            </div>
+            <div class="user-profile-action">
+                <button class="btn-like-profile" onclick="likeFromProfile()">❤️ いいね！する</button>
+            </div>
+        </div>
+    </div>
+
     <!-- メッセージ画面 -->
     <div id="messagingScreen" class="screen">
         <div class="messaging-container">

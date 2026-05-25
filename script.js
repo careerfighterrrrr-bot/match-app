@@ -20,6 +20,10 @@ let currentChatPartner = null;
 let currentUid = null;
 let realProfiles = [];
 let swipedUsers = [];
+let likedUsers = {};
+let currentViewedUser = null;
+let profileViewImages = [];
+let profileViewImageIndex = 0;
 
 // Firestoreに保存
 function saveState() {
@@ -664,6 +668,7 @@ async function openLikesScreen() {
     showScreen('likesScreen');
     const list = document.getElementById('likesList');
     list.innerHTML = '<div class="matches-empty"><p>読み込み中...</p></div>';
+    likedUsers = {};
 
     const snapshot = await db.collection('likes')
         .where('receiverUid', '==', currentUid)
@@ -679,17 +684,20 @@ async function openLikesScreen() {
         return;
     }
 
-    // 送信者のプロフィールを取得
     const senderUids = snapshot.docs.map(d => d.data().senderUid);
     const profilePromises = senderUids.map(uid => db.collection('users').doc(uid).get());
     const profileDocs = await Promise.all(profilePromises);
+
+    profileDocs.forEach(doc => {
+        if (doc.exists) likedUsers[doc.id] = doc.data();
+    });
 
     list.innerHTML = profileDocs.map(doc => {
         if (!doc.exists) return '';
         const u = doc.data();
         const photo = u.photos && u.photos[0] ? u.photos[0] : `https://i.pravatar.cc/80?u=${doc.id}`;
         return `
-            <div class="match-item">
+            <div class="match-item" onclick="openLikerProfile('${doc.id}')">
                 <img src="${photo}" class="match-item-avatar" onerror="this.src='https://i.pravatar.cc/80?img=1'">
                 <div class="match-item-info">
                     <div class="match-item-header">
@@ -700,8 +708,65 @@ async function openLikesScreen() {
             </div>`;
     }).join('');
 
-    // バッジを更新
     document.getElementById('likesBadge').style.display = 'none';
+}
+
+function openLikerProfile(uid) {
+    const u = likedUsers[uid];
+    if (!u) return;
+    currentViewedUser = { uid, ...u };
+    profileViewImages = u.photos && u.photos.length > 0
+        ? u.photos
+        : [`https://i.pravatar.cc/400?u=${uid}`];
+    profileViewImageIndex = 0;
+
+    document.getElementById('profileViewName').textContent = u.name || '名無し';
+    document.getElementById('profileViewAge').textContent = `${u.age || '?'}歳`;
+    document.getElementById('profileViewBio').textContent = u.bio || '';
+
+    setupProfileViewImages();
+    showScreen('userProfileScreen');
+}
+
+function setupProfileViewImages() {
+    const img = document.getElementById('profileViewImage');
+    const prevBtn = document.getElementById('profileViewPrev');
+    const nextBtn = document.getElementById('profileViewNext');
+    const dotsEl = document.getElementById('profileViewDots');
+
+    dotsEl.innerHTML = profileViewImages.map((_, i) =>
+        `<span class="dot${i === 0 ? ' active' : ''}"></span>`
+    ).join('');
+
+    function showImage(i) {
+        profileViewImageIndex = i;
+        img.style.opacity = '0.6';
+        img.src = profileViewImages[i];
+        img.onload = () => { img.style.opacity = '1'; };
+        img.onerror = () => { img.style.opacity = '1'; };
+        dotsEl.querySelectorAll('.dot').forEach((d, di) => d.classList.toggle('active', di === i));
+        prevBtn.style.display = i === 0 ? 'none' : 'flex';
+        nextBtn.style.display = i === profileViewImages.length - 1 ? 'none' : 'flex';
+    }
+
+    prevBtn.onclick = () => showImage(profileViewImageIndex - 1);
+    nextBtn.onclick = () => showImage(profileViewImageIndex + 1);
+    showImage(0);
+}
+
+function backToLikes() {
+    showScreen('likesScreen');
+}
+
+function likeFromProfile() {
+    if (!currentViewedUser) return;
+    db.collection('likes').doc(`${currentUid}_${currentViewedUser.uid}`).set({
+        senderUid: currentUid,
+        receiverUid: currentViewedUser.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(`${currentViewedUser.name || '名無し'}さんにいいね！しました❤️`);
+    backToLikes();
 }
 
 function backToSwipeFromLikes() {
