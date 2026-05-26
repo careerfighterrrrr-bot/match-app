@@ -578,6 +578,7 @@ async function likeProfile() {
             showMatch({
                 id: Date.now(),
                 uid: null,
+                role: currentProfile.role || null,
                 name: currentProfile.name,
                 age: currentProfile.age,
                 bio: currentProfile.bio,
@@ -604,6 +605,7 @@ async function likeProfile() {
         showMatch({
             id: Date.now(),
             uid: currentProfile.uid,
+            role: currentProfile.role || null,
             name: currentProfile.name,
             age: currentProfile.age,
             bio: currentProfile.bio,
@@ -796,6 +798,7 @@ function likeFromProfile() {
         partner = {
             id: Date.now(),
             uid: currentViewedUser.uid,
+            role: getBotRole(currentViewedUser.name),
             name: currentViewedUser.name || '名無し',
             age: currentViewedUser.age || '?',
             bio: currentViewedUser.bio || '',
@@ -832,6 +835,7 @@ function messageFromProfile() {
         partner = {
             id: Date.now(),
             uid: currentViewedUser.uid,
+            role: getBotRole(currentViewedUser.name),
             name: currentViewedUser.name || '名無し',
             age: currentViewedUser.age || '?',
             bio: currentViewedUser.bio || '',
