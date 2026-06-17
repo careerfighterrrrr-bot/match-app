@@ -745,6 +745,27 @@ body {
     transform: scale(0.95);
 }
 
+#installBanner {
+    margin-top: 20px;
+    text-align: center;
+}
+
+#installBtn {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.8);
+    border-radius: 20px;
+    padding: 8px 18px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+#installIosHint {
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
 .btn-primary {
     padding: 14px 30px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1315,6 +1336,168 @@ body {
 
 .btn-send:active {
     transform: scale(0.92);
+}
+
+/* ── ③ 趣味特化プロフィール ── */
+.poker-profile-select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    background: white;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 6px;
+}
+.poker-profile-select:focus { border-color: #667eea; }
+
+.poker-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+.poker-badge {
+    background: rgba(102,126,234,0.1);
+    border: 1px solid rgba(102,126,234,0.3);
+    color: #667eea;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 600;
+}
+
+/* ── ① ポーカーで相性チェック：勝負ボタン ── */
+.btn-challenge-swipe {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-challenge-swipe:hover { transform: scale(1.1); box-shadow: 0 8px 20px rgba(102,126,234,0.5); }
+.btn-challenge-swipe:active { transform: scale(0.95); }
+
+/* ── ポーカーゲームモーダル ── */
+#pokerGameModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+#pokerGameModal.active { display: flex; }
+
+.poker-game-box {
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: 24px;
+    padding: 28px 20px 24px;
+    width: 100%;
+    max-width: 360px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.poker-game-box h2 { font-size: 17px; margin-bottom: 20px; font-weight: 700; }
+
+.poker-hand-section { margin-bottom: 12px; }
+.hand-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cards-row {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 6px;
+}
+.playing-card {
+    width: 40px;
+    height: 56px;
+    background: white;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    color: #1a1a1a;
+    gap: 1px;
+    flex-shrink: 0;
+}
+.playing-card.red { color: #e53e3e; }
+
+.hand-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffd700;
+    min-height: 20px;
+}
+.vs-badge {
+    font-size: 16px;
+    font-weight: bold;
+    color: rgba(255,255,255,0.4);
+    margin: 8px 0;
+}
+.game-result-text {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 16px 0 14px;
+    min-height: 30px;
+}
+.game-action-btns { display: flex; gap: 10px; }
+.btn-game-like {
+    flex: 1;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff4757, #ff6b6b);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.btn-game-like:active { transform: scale(0.96); }
+.btn-game-nope {
+    flex: 1;
+    padding: 12px;
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.8);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+}
+.btn-game-nope:active { background: rgba(255,255,255,0.2); }
+.game-dealing-text {
+    font-size: 15px;
+    color: rgba(255,255,255,0.6);
+    padding: 20px 0;
+    animation: gamePulse 1s infinite;
+}
+@keyframes gamePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
 
 @media (max-width: 600px) {

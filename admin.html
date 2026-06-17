@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot1 管理画面</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* ── ログイン ── */
+        #loginScreen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 20px;
+        }
+        .login-box {
+            background: white; border-radius: 16px; padding: 32px;
+            width: 100%; max-width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .login-box h1 { text-align: center; font-size: 22px; margin-bottom: 24px; color: #667eea; }
+        .login-box input {
+            width: 100%; padding: 12px 16px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 15px; margin-bottom: 12px; outline: none; font-family: inherit;
+        }
+        .login-box input:focus { border-color: #667eea; }
+        .login-box .btn-primary {
+            width: 100%; padding: 12px; background: #667eea; color: white; border: none;
+            border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600; margin-top: 4px;
+        }
+        .login-box .btn-primary:hover { background: #5a6fd6; }
+        #loginError { color: #e53e3e; font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; }
+
+        /* ── 管理パネル ── */
+        #adminPanel { display: none; }
+
+        .admin-header {
+            background: white; padding: 14px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08); position: sticky; top: 0; z-index: 10;
+        }
+        #adminTitle { font-size: 17px; font-weight: 700; color: #333; }
+        .count-badge {
+            background: #667eea; color: white; border-radius: 99px;
+            padding: 2px 9px; font-size: 12px; margin-left: 8px; font-weight: 600;
+        }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .header-right span { font-size: 13px; color: #888; }
+        .btn-logout {
+            padding: 6px 14px; border: 1px solid #ddd; border-radius: 6px;
+            background: white; cursor: pointer; font-size: 13px; color: #666;
+        }
+        .btn-logout:hover { background: #f5f5f5; }
+
+        .admin-actions {
+            padding: 16px 20px; display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .btn-add {
+            padding: 10px 20px; background: #667eea; color: white; border: none;
+            border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 600;
+        }
+        .btn-add:hover { background: #5a6fd6; }
+        .btn-seed {
+            padding: 10px 20px; background: white; color: #555; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 14px; cursor: pointer;
+        }
+        .btn-seed:hover { background: #f5f5f5; }
+
+        /* ── エントリ一覧 ── */
+        .entry-list { padding: 0 20px 80px; }
+
+        .entry-card {
+            background: white; border-radius: 12px; padding: 16px;
+            margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .entry-keywords {
+            font-size: 13px; color: #667eea; font-weight: 600; margin-bottom: 8px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .entry-reply {
+            font-size: 14px; color: #555; line-height: 1.5;
+            overflow: hidden; display: -webkit-box;
+            -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+        }
+        .entry-footer {
+            display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;
+        }
+        .btn-edit {
+            padding: 6px 18px; background: #f0f2f5; border: none;
+            border-radius: 6px; cursor: pointer; font-size: 13px; color: #333;
+        }
+        .btn-edit:hover { background: #e2e8f0; }
+        .btn-delete {
+            padding: 6px 18px; background: #fff5f5; border: none;
+            border-radius: 6px; cursor: pointer; font-size: 13px; color: #e53e3e;
+        }
+        .btn-delete:hover { background: #fed7d7; }
+
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #aaa; line-height: 1.6;
+        }
+
+        /* ── モーダル ── */
+        #modal {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 100;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-box {
+            background: white; border-radius: 16px; padding: 24px;
+            width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+        }
+        .modal-box h2 { font-size: 18px; margin-bottom: 20px; color: #333; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 13px; color: #666;
+            margin-bottom: 6px; font-weight: 600;
+        }
+        .form-group textarea {
+            width: 100%; border: 1px solid #ddd; border-radius: 8px;
+            padding: 12px; font-size: 14px; font-family: inherit;
+            resize: vertical; outline: none; line-height: 1.6;
+        }
+        .form-group textarea:focus { border-color: #667eea; }
+        .form-hint { font-size: 12px; color: #aaa; margin-top: 5px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-cancel {
+            padding: 10px 20px; background: white; border: 1px solid #ddd;
+            border-radius: 8px; cursor: pointer; font-size: 14px; color: #666;
+        }
+        .btn-cancel:hover { background: #f5f5f5; }
+        .btn-save {
+            padding: 10px 28px; background: #667eea; color: white; border: none;
+            border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
+        }
+        .btn-save:hover { background: #5a6fd6; }
+        .btn-save:disabled { background: #a0aec0; cursor: default; }
+    </style>
+</head>
+<body>
+
+    <!-- ログイン画面 -->
+    <div id="loginScreen">
+        <div class="login-box">
+            <h1>🎴 Bot1 管理画面</h1>
+            <input type="email" id="loginEmail" placeholder="メールアドレス" autocomplete="email">
+            <input type="password" id="loginPassword" placeholder="パスワード"
+                   onkeypress="if(event.key==='Enter') login()">
+            <button class="btn-primary" onclick="login()">ログイン</button>
+            <div id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- 管理パネル -->
+    <div id="adminPanel">
+        <div class="admin-header">
+            <span id="adminTitle">🎴 Bot1 知識ベース管理</span>
+            <div class="header-right">
+                <span id="userEmail"></span>
+                <button class="btn-logout" onclick="logout()">ログアウト</button>
+            </div>
+        </div>
+
+        <div class="admin-actions">
+            <button class="btn-add" onclick="openModal()">＋ 新規追加</button>
+            <button class="btn-seed" onclick="seedDefaultData()">初期データをインポート</button>
+        </div>
+
+        <div class="entry-list" id="entryList">
+            <div class="empty-state"><p>読み込み中...</p></div>
+        </div>
+    </div>
+
+    <!-- 追加・編集モーダル -->
+    <div id="modal">
+        <div class="modal-box">
+            <h2 id="modalTitle">知識を追加</h2>
+            <div class="form-group">
+                <label>キーワード（カンマ区切り）</label>
+                <textarea id="modalKeywords" rows="3"
+                    placeholder="例: WSOP, 世界大会, メインイベント, ラスベガス"></textarea>
+                <div class="form-hint">ユーザーのメッセージにこれらのキーワードが含まれると返答します</div>
+            </div>
+            <div class="form-group">
+                <label>返答内容</label>
+                <textarea id="modalReply" rows="12"
+                    placeholder="ユーザーへの返答を入力...&#10;改行はそのまま反映されます"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+                <button class="btn-save" onclick="saveEntry()">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

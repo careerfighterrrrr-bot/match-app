@@ -1,3 +1,44 @@
+// ホーム画面追加
+let installPrompt = null;
+
+function isIos() {
+    return /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+}
+function isInStandaloneMode() {
+    return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    showInstallBanner();
+});
+
+function showInstallBanner() {
+    const banner = document.getElementById('installBanner');
+    if (!banner || isInStandaloneMode()) return;
+    banner.style.display = 'block';
+    if (isIos()) {
+        document.getElementById('installBtn').style.display = 'none';
+        document.getElementById('installIosHint').style.display = 'block';
+    }
+}
+
+async function handleInstall() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') {
+        document.getElementById('installBanner').style.display = 'none';
+    }
+    installPrompt = null;
+}
+
+// iOSの場合もバナーを表示
+if (isIos() && !isInStandaloneMode()) {
+    window.addEventListener('DOMContentLoaded', showInstallBanner);
+}
+
 // Firebase 初期化
 const firebaseConfig = {
     apiKey: "AIzaSyBMSmokIU5uuFTq0_e7Kd9lBK8Ve1qwvc4",
@@ -57,6 +98,9 @@ function userToProfile(user) {
         name: user.name || '名無し',
         age: user.age || '?',
         bio: user.bio || '',
+        pokerHistory: user.pokerHistory || '',
+        pokerGame: user.pokerGame || '',
+        pokerStyle: user.pokerStyle || '',
         introduction: user.bio ? user.bio.split('\n').filter(Boolean) : ['よろしくお願いします！'],
         images: user.photos && user.photos.length > 0
             ? user.photos
@@ -86,6 +130,7 @@ async function loadUserData(uid) {
         swipedUsers = [];
     }
     await loadRealProfiles();
+    await loadBotKnowledge();
 
     const initial = currentUserName.charAt(0) || '?';
     document.getElementById('drawerName').textContent = currentUserName;
@@ -93,6 +138,9 @@ async function loadUserData(uid) {
     document.getElementById('drawerIdentifier').textContent = maskIdentifier(user.email || '');
     document.getElementById('bioDisplay').textContent = user.bio || '未設定';
     document.getElementById('bioInput').value = user.bio || '';
+    document.getElementById('pokerHistory').value = user.pokerHistory || '';
+    document.getElementById('pokerGame').value = user.pokerGame || '';
+    document.getElementById('pokerStyle').value = user.pokerStyle || '';
     applyProfilePhoto(user.photo || null, initial);
     renderProfilePhotos(user.photos || []);
 
@@ -372,7 +420,7 @@ const autoReplies = [
     "わかります〜！同じ気持ちです😄"
 ];
 
-const pokerKnowledge = [
+const defaultPokerKnowledge = [
     {
         keywords: ['役', 'ハンド', '手札', '強さ', 'ランキング', '順番', 'ロイヤル', 'フラッシュ', 'ストレート', 'フォーカード', 'フルハウス', 'スリーカード', 'ツーペア', 'ワンペア', 'ハイカード'],
         reply: '♠️ ハンドの強さ順：\n①ロイヤルフラッシュ（最強）\n②ストレートフラッシュ\n③フォーカード\n④フルハウス\n⑤フラッシュ\n⑥ストレート\n⑦スリーカード\n⑧ツーペア\n⑨ワンペア\n⑩ハイカード（最弱）🃏'
@@ -420,7 +468,153 @@ const pokerKnowledge = [
     {
         keywords: ['チルト', '感情', '負け', 'イライラ', 'メンタル', '精神'],
         reply: '🧘 チルト対策：\nチルト（感情的なプレイ）はポーカーの最大の敵！\n\n【予防法】\n・損失許容額を事前に決めておく\n・1回の負けを引きずらない（バッドビートは誰にでもある）\n・休憩を積極的に取る\n\n【気づいたら】すぐにその場を離れることが大切。感情が落ち着いてから再開しましょう。冷静さを保てるプレイヤーが長期的に勝ちます💪'
+    },
+    {
+        keywords: ['世界大会', 'WSOP', 'ワールドシリーズ', 'WPT', 'EPT', 'ワールドポーカー', '国際大会', 'メインイベント', 'ラスベガス'],
+        reply: '🌍 主要ポーカー世界大会：\n\n♠️ WSOP（ワールドシリーズ・オブ・ポーカー）\n毎年5〜7月、ラスベガス（バリーズ/パリスホテル）開催。世界最大の権威ある大会。ブレスレットをかけて数百イベントが行われる。\n\n♣️ WPT（ワールドポーカーツアー）\n世界各地を転戦する国際ツアー。各ストップで賞金総額数億円規模。\n\n♥️ EPT（ヨーロピアンポーカーツアー）\nPokerStars主催。モナコ・バルセロナ等で開催されるヨーロッパ最大のツアー。\n\n♦️ スーパーハイローラーボウル\n参加費$300,000の超ハイステーク大会。世界トップ選手が集結。'
+    },
+    {
+        keywords: ['参加費', 'エントリー費', '費用', '参加料', 'プライズ', '賞金総額', '賞金プール'],
+        reply: '💰 主要世界大会の参加費（バイイン）：\n\nWSOP メインイベント：$10,000（約150万円）\nWSOP ハイローラー各種：$25,000〜$111,111\nWPT メインイベント：$3,500〜$10,000\nEPT メインイベント：€5,300（約85万円）\nスーパーハイローラーボウル：$300,000（約4,500万円）\n\n💡 賞金総額はWSOP MEで参加者数×$10,000から算出。2023年は参加者10,043人で総額約100億円超！\n優勝賞金は例年10〜12億円規模になります🏆'
+    },
+    {
+        keywords: ['優勝', '優勝者', '勝者', 'チャンピオン', 'ウィナー', '2021', '2022', '2023', '2024', '歴代'],
+        reply: '🏆 WSOP メインイベント近年の優勝者：\n\n2023年：Daniel Weinman（アメリカ）\n　賞金：$12,100,000（約18億円）\n　参加者：10,043人\n\n2022年：Espen Jorstad（ノルウェー）\n　賞金：$10,000,000（約15億円）\n\n2021年：Koray Aldemir（ドイツ）\n　賞金：$8,000,000（約12億円）\n\n2019年：Hossein Ensan（ドイツ/イラン系）\n　賞金：$10,000,000\n\n※2020年はコロナの影響で規模縮小・時期変更\n※最新情報はWSOP公式サイトで確認を！'
+    },
+    {
+        keywords: ['ファインプレー', '名場面', '名シーン', '伝説', '神プレー', '有名なプレー', '名勝負', '歴史的'],
+        reply: '✨ ポーカー史に残る伝説の名場面：\n\n🃏【Moneymaker Effect / 2003年WSOP】\nChris Moneymakerがオンライン予選（参加費$86）から出場し、WSOPメインイベントを優勝（$2.5M獲得）。アマチュアの夢を証明しポーカーブームの火付け役に！\n\n🃏【Phil Iveyのブラフ / EPT 2009年】\nボードにペアもフラッシュもない状況でリバーオールイン。相手のトップペアをフォールドさせた完璧な読みのブラフ。\n\n🃏【Isildur1 vs Durrrr / 2009年オンライン】\nViktor BlomとTom Dwanがオンラインで数百万ドルを賭け合った伝説のセッション。1日で数億円が動いた。\n\n📺 名場面はYouTubeで「WSOP highlights」「poker greatest moments」で検索！'
     }
+];
+let pokerKnowledge = [...defaultPokerKnowledge];
+
+async function loadBotKnowledge() {
+    try {
+        const snapshot = await db.collection('botKnowledge').get();
+        if (!snapshot.empty) {
+            pokerKnowledge = snapshot.docs
+                .map(doc => doc.data())
+                .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+        }
+    } catch (e) {
+        // Firestore取得失敗時はデフォルトを使い続ける
+    }
+}
+
+// ── ③ ポーカープロフィール保存 ──────────────────────────
+async function savePokerProfile() {
+    const history = document.getElementById('pokerHistory').value;
+    const game = document.getElementById('pokerGame').value;
+    const style = document.getElementById('pokerStyle').value;
+    if (currentUid) {
+        await db.collection('users').doc(currentUid).update({
+            pokerHistory: history, pokerGame: game, pokerStyle: style
+        });
+    }
+    showToast('ポーカー情報を保存しました！');
+}
+
+// ── ① ポーカーミニゲーム ────────────────────────────────
+const CARD_SUITS = ['♠', '♥', '♦', '♣'];
+const CARD_RANKS = [2,3,4,5,6,7,8,9,10,11,12,13,14];
+
+function createDeck() {
+    const deck = [];
+    for (const s of CARD_SUITS) for (const r of CARD_RANKS) deck.push({ suit: s, rank: r });
+    return deck;
+}
+
+function shuffleDeck(deck) {
+    const d = [...deck];
+    for (let i = d.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [d[i], d[j]] = [d[j], d[i]];
+    }
+    return d;
+}
+
+function rankStr(r) {
+    return { 14: 'A', 13: 'K', 12: 'Q', 11: 'J' }[r] || String(r);
+}
+
+function evaluateHand(cards) {
+    const ranks = cards.map(c => c.rank).sort((a, b) => b - a);
+    const suits = cards.map(c => c.suit);
+    const isFlush = suits.every(s => s === suits[0]);
+    const isStraight = new Set(ranks).size === 5 && ranks[0] - ranks[4] === 4;
+    const isAceLow = JSON.stringify(ranks) === JSON.stringify([14,5,4,3,2]);
+    const counts = {};
+    ranks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+    const grouped = Object.values(counts).sort((a, b) => b - a);
+    if (isFlush && isStraight && ranks[0] === 14) return { score: 900, name: 'ロイヤルフラッシュ！👑' };
+    if (isFlush && (isStraight || isAceLow)) return { score: 800 + ranks[0], name: 'ストレートフラッシュ！🔥' };
+    if (grouped[0] === 4) return { score: 700 + ranks[0], name: 'フォーカード！💥' };
+    if (grouped[0] === 3 && grouped[1] === 2) return { score: 600 + ranks[0], name: 'フルハウス！✨' };
+    if (isFlush) return { score: 500 + ranks[0], name: 'フラッシュ！' };
+    if (isStraight || isAceLow) return { score: 400 + (isAceLow ? 5 : ranks[0]), name: 'ストレート！' };
+    if (grouped[0] === 3) return { score: 300 + ranks[0], name: 'スリーカード！' };
+    if (grouped[0] === 2 && grouped[1] === 2) return { score: 200 + ranks[0], name: 'ツーペア' };
+    if (grouped[0] === 2) return { score: 100 + ranks[0], name: 'ワンペア' };
+    return { score: ranks[0], name: `ハイカード（${rankStr(ranks[0])}）` };
+}
+
+function renderCards(containerId, cards) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = cards.map(c => {
+        const red = c.suit === '♥' || c.suit === '♦';
+        return `<div class="playing-card${red ? ' red' : ''}"><span>${rankStr(c.rank)}</span><span>${c.suit}</span></div>`;
+    }).join('');
+}
+
+function openPokerGame() {
+    if (!currentProfile) return;
+    document.getElementById('gameTitle').textContent = `🃏 ${currentProfile.name}さんと勝負！`;
+    document.getElementById('gameDealing').style.display = 'block';
+    document.getElementById('gameContent').style.display = 'none';
+    document.getElementById('gameResultText').textContent = '';
+    document.getElementById('gameActionBtns').style.display = 'none';
+    document.getElementById('pokerGameModal').classList.add('active');
+
+    const deck = shuffleDeck(createDeck());
+    const playerHand = deck.slice(0, 5);
+    const opponentHand = deck.slice(5, 10);
+
+    setTimeout(() => {
+        document.getElementById('gameDealing').style.display = 'none';
+        document.getElementById('gameContent').style.display = 'block';
+        renderCards('playerCards', playerHand);
+        const playerResult = evaluateHand(playerHand);
+        document.getElementById('playerHandName').textContent = playerResult.name;
+        renderCards('opponentCards', opponentHand);
+        const opponentResult = evaluateHand(opponentHand);
+        document.getElementById('opponentHandName').textContent = opponentResult.name;
+        setTimeout(() => {
+            const resultEl = document.getElementById('gameResultText');
+            if (playerResult.score > opponentResult.score) resultEl.textContent = '🎉 あなたの勝ち！';
+            else if (playerResult.score < opponentResult.score) resultEl.textContent = '😢 負けちゃった...';
+            else resultEl.textContent = '🤝 引き分け！';
+            document.getElementById('gameActionBtns').style.display = 'flex';
+        }, 600);
+    }, 1200);
+}
+
+function closePokerGame() {
+    document.getElementById('pokerGameModal').classList.remove('active');
+}
+
+function likeFromGame() { closePokerGame(); likeProfile(); }
+function nopeFromGame() { closePokerGame(); noProfile(); }
+
+// ── ④ 会話のお題 ─────────────────────────────────────────
+const conversationTopics = [
+    '💬 今日のお題：あなたの最高のブラフエピソードを教えて！🎭',
+    '💬 今日のお題：ポーカーで一番印象に残った勝負は？♠️',
+    '💬 今日のお題：あなたのラッキーカードは何？🃏',
+    '💬 今日のお題：ポーカーを始めたきっかけは？✨',
+    '💬 今日のお題：オールインした経験はある？💰',
+    '💬 今日のお題：リアルとオンライン、どっちが好き？🌐',
+    '💬 今日のお題：ポーカーで学んだことを人生に活かしてる？🎯',
+    '💬 今日のお題：一番好きなハンドは？👑',
 ];
 
 function getPokerReply(text) {
@@ -448,6 +642,15 @@ function loadCard() {
     const dotsHTML = profile.images.map((_, i) =>
         `<span class="dot${i === 0 ? ' active' : ''}"></span>`
     ).join('');
+    const badges = [
+        profile.pokerHistory ? `🃏 ${profile.pokerHistory}` : '',
+        profile.pokerGame ? `♠️ ${profile.pokerGame}` : '',
+        profile.pokerStyle ? `🎯 ${profile.pokerStyle}` : ''
+    ].filter(Boolean);
+    const badgesHTML = badges.length
+        ? `<div class="poker-badges">${badges.map(b => `<span class="poker-badge">${b}</span>`).join('')}</div>`
+        : '';
+
     const fallback = `https://i.pravatar.cc/400?img=${Math.floor(Math.random() * 70)}`;
     card.innerHTML = `
         <div class="card-image-wrapper">
@@ -460,6 +663,7 @@ function loadCard() {
         <div class="card-info">
             <div class="card-name">${profile.name}<span style="font-size: 18px; color: #999;">  ${profile.age}</span></div>
             <div class="card-bio">${profile.bio}</div>
+            ${badgesHTML}
             <div class="card-tap-hint">👆 タップして自己紹介を見る</div>
         </div>
         <div class="card-intro-overlay">
@@ -933,6 +1137,12 @@ function openChat(partner) {
             : 'はじめまして！マッチしてくれてありがとう😊';
         setTimeout(() => {
             addPartnerMessage(partner, greeting);
+            if (partner.role !== 'bot1') {
+                setTimeout(() => {
+                    const topic = conversationTopics[Math.floor(Math.random() * conversationTopics.length)];
+                    addPartnerMessage(partner, topic);
+                }, 1800);
+            }
         }, 800);
     }
 }

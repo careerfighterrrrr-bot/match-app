@@ -46,6 +46,11 @@
                 <div class="auth-error" id="loginError"></div>
                 <button type="submit" class="btn-primary">ログイン</button>
             </form>
+
+            <div id="installBanner" style="display:none">
+                <button id="installBtn" onclick="handleInstall()">📲 ホーム画面に追加する</button>
+                <p id="installIosHint" style="display:none">Safariの 共有ボタン（□↑）→「ホーム画面に追加」</p>
+            </div>
         </div>
     </div>
 
@@ -72,6 +77,7 @@
 
         <div class="swipe-buttons">
             <button class="btn-nope" onclick="swipeLeft()">💔 No</button>
+            <button class="btn-challenge-swipe" onclick="openPokerGame()" title="ポーカーで勝負！">🃏</button>
             <button class="btn-like" onclick="swipeRight()">❤️ Like</button>
         </div>
 
@@ -210,8 +216,63 @@
                 </div>
             </div>
         </div>
+            <div class="profile-drawer-row">
+                <div class="profile-drawer-row-header">
+                    <span class="profile-drawer-label">ポーカー情報</span>
+                    <button class="bio-edit-btn" onclick="savePokerProfile()">保存</button>
+                </div>
+                <select class="poker-profile-select" id="pokerHistory">
+                    <option value="">ポーカー歴</option>
+                    <option value="未経験">未経験</option>
+                    <option value="1年未満">1年未満</option>
+                    <option value="1〜3年">1〜3年</option>
+                    <option value="3年以上">3年以上</option>
+                </select>
+                <select class="poker-profile-select" id="pokerGame">
+                    <option value="">好きなゲーム</option>
+                    <option value="テキサスホールデム">テキサスホールデム</option>
+                    <option value="オマハ">オマハ</option>
+                    <option value="スタッド">スタッド</option>
+                    <option value="その他">その他</option>
+                </select>
+                <select class="poker-profile-select" id="pokerStyle">
+                    <option value="">プレイスタイル</option>
+                    <option value="タイトアグレッシブ">タイトアグレッシブ</option>
+                    <option value="ルースアグレッシブ">ルースアグレッシブ</option>
+                    <option value="タイトパッシブ">タイトパッシブ</option>
+                    <option value="ルースパッシブ">ルースパッシブ</option>
+                    <option value="バランス型">バランス型</option>
+                </select>
+            </div>
+        </div>
         <div class="profile-drawer-footer">
             <button class="btn-logout" onclick="logout()">ログアウト</button>
+        </div>
+    </div>
+
+    <!-- ① ポーカーゲームモーダル -->
+    <div id="pokerGameModal">
+        <div class="poker-game-box">
+            <h2 id="gameTitle">🃏 勝負！</h2>
+            <div id="gameDealing" class="game-dealing-text">カードを配っています...</div>
+            <div id="gameContent" style="display:none">
+                <div class="poker-hand-section">
+                    <div class="hand-label">あなたの手</div>
+                    <div class="cards-row" id="playerCards"></div>
+                    <div class="hand-name" id="playerHandName"></div>
+                </div>
+                <div class="vs-badge">VS</div>
+                <div class="poker-hand-section">
+                    <div class="hand-label">相手の手</div>
+                    <div class="cards-row" id="opponentCards"></div>
+                    <div class="hand-name" id="opponentHandName"></div>
+                </div>
+                <div class="game-result-text" id="gameResultText"></div>
+                <div class="game-action-btns" id="gameActionBtns" style="display:none">
+                    <button class="btn-game-nope" onclick="nopeFromGame()">💔 パス</button>
+                    <button class="btn-game-like" onclick="likeFromGame()">❤️ いいね！</button>
+                </div>
+            </div>
         </div>
     </div>
 
