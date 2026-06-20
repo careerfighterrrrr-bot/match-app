@@ -1,3 +1,10 @@
+// Service Worker登録
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/match-app/sw.js').catch(() => {});
+  });
+}
+
 // ホーム画面追加
 let installPrompt = null;
 
