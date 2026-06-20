@@ -3,8 +3,7 @@
 > ポーカーを共通の趣味で繋がる、スワイプ型恋愛マッチングアプリ。  
 > フレームワーク不使用のVanilla JSで構築し、Firebase + PWAで実動するプロダクトとして公開中。
 
-**[▶ デモを見る](https://your-github-username.github.io/match-app/)** ← GitHubリポジトリのURLに差し替えてください
-
+https://careerfighterrrrr-bot.github.io/match-app/
 ---
 
 ## 主な機能
